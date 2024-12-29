@@ -1,31 +1,39 @@
 package io.github.javajump3r;
 
+import com.google.gson.Gson;
 import me.lunaluna.fabric.elytrarecast.Startup;
 import me.lunaluna.fabric.elytrarecast.config.Config;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.resource.language.I18n;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.AttributeModifiersComponent;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.ItemSteerable;
-import net.minecraft.item.ArmorItem;
-import net.minecraft.item.ElytraItem;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.entity.attribute.EntityAttribute;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.item.*;
+import net.minecraft.item.equipment.ArmorMaterial;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
+import javax.xml.crypto.Data;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 public class ElytraSwapInit implements ClientModInitializer {
@@ -42,7 +50,17 @@ public class ElytraSwapInit implements ClientModInitializer {
 
         var chestplateSlots = getChestplateSlots();
 
-        chestplateSlots.sort(Comparator.comparingInt(slot -> getChestplateStat(client.player.getInventory().getStack(slot))));
+        chestplateSlots = chestplateSlots
+                .stream()
+                .filter(slot->(getChestplateStat(client.player.getInventory().getStack(slot))>0f))
+                .sorted(
+                        Comparator.comparingInt(
+                                        slot -> getChestplateStat(
+                                                        client.player.getInventory().getStack(slot)
+                                                )
+                                )
+                ).collect(Collectors.toCollection(ArrayList::new));
+        Collections.reverse(chestplateSlots);
 
         if(FabricLoader.getInstance().isModLoaded("elytra-recast")){
             try {
@@ -95,7 +113,7 @@ public class ElytraSwapInit implements ClientModInitializer {
         List<Integer> elytraSlots = new ArrayList<>();
 
         for (int slot : slotArray()) {
-            if (MinecraftClient.getInstance().player.getInventory().getStack(slot).getItem() instanceof ElytraItem) {
+            if (MinecraftClient.getInstance().player.getInventory().getStack(slot).getItem().getComponents().contains(DataComponentTypes.GLIDER)) {
                 elytraSlots.add(slot);
             }
         }
@@ -114,20 +132,46 @@ public class ElytraSwapInit implements ClientModInitializer {
 
         return chestplateSlots;
     }
+    private static Registry<Enchantment> getEnchantmentRegistry(){return MinecraftClient.getInstance().world.getRegistryManager().getOrThrow(RegistryKeys.ENCHANTMENT);}
 
+    private static int getLevel(RegistryKey<Enchantment> key, ItemStack stack) {
+        var enchant = getEnchantmentRegistry().get(key);
+        RegistryEntry<Enchantment> enchantEntry = getEnchantmentRegistry().getEntry(enchant);
+        return EnchantmentHelper.getLevel(enchantEntry,stack);
+    }
     private static int getElytraStat(ItemStack elytraItem) {
-        return (EnchantmentHelper.getLevel(Enchantments.MENDING,elytraItem)*3+1)+EnchantmentHelper.getLevel(Enchantments.UNBREAKING,elytraItem);
+        var stat = (getLevel(Enchantments.MENDING,elytraItem)*3+1)+getLevel(Enchantments.UNBREAKING,elytraItem);
+
+        return stat;
     }
 
     private static int getChestplateStat(ItemStack chestplateItem) {
-        return EnchantmentHelper.getLevel(Enchantments.BINDING_CURSE, chestplateItem);
+        float score = 1;
+        if(chestplateItem.getItem() instanceof ArmorItem armorItem){
+            var component = armorItem.getComponents().get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
+            for (AttributeModifiersComponent.Entry entry : component.modifiers()) {
+                RegistryEntry<EntityAttribute> attribute = entry.attribute();
+                if(attribute.value() == EntityAttributes.ARMOR) {
+                    score += entry.modifier().value();
+                }
+                if(attribute.value() == EntityAttributes.ARMOR_TOUGHNESS) {
+                    score += entry.modifier().value();
+                }
+            }
+            score += getLevel(Enchantments.PROTECTION,chestplateItem)*2;
+            score += getLevel(Enchantments.MENDING,chestplateItem)*0.5;
+            score += chestplateItem.contains(DataComponentTypes.CUSTOM_NAME)?0.25:0;
+            score += getLevel(Enchantments.UNBREAKING,chestplateItem)*0.24/3;
+        }
+
+        return (int) (score*1000);
     }
 
     private static void wearElytra(int slotId, MinecraftClient client) {
         swap(slotId, client);
         try {
             client.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(client.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-            client.player.startFallFlying();
+            client.player.startGliding();
         } catch (NullPointerException ex) {
             ex.printStackTrace();
         }
@@ -147,7 +191,6 @@ public class ElytraSwapInit implements ClientModInitializer {
             ex.printStackTrace();
         }
     }
-
     public static boolean isSlotChestplate(MinecraftClient client, int slotId) {
 
         if (client.player == null) {
@@ -157,7 +200,8 @@ public class ElytraSwapInit implements ClientModInitializer {
 
         return !chestSlot.isEmpty() &&
                 chestSlot.getItem() instanceof ArmorItem &&
-                ((ArmorItem) chestSlot.getItem()).getSlotType() == EquipmentSlot.CHEST;
+                chestSlot.getItem().getComponents().get(DataComponentTypes.EQUIPPABLE).slot() == EquipmentSlot.CHEST &&
+                getLevel(Enchantments.BINDING_CURSE,chestSlot) == 0;
     }
 
     private static int[] slotArray() {
@@ -190,5 +234,19 @@ public class ElytraSwapInit implements ClientModInitializer {
         });
         KeyBindingHelper.registerKeyBinding(bind);
     }
+    private static void logInChat(Object... objects){
+        var chat = MinecraftClient.getInstance().inGameHud.getChatHud();
+        if(chat==null)
+            return;
+        var msg = new StringBuilder();
+        for(var object : objects){
+            if(object instanceof Text text){
+                msg.append(text.asTruncatedString(100000));
+                continue;
+            }
+            msg.append(object);
+        }
 
+        chat.addMessage(Text.of(msg.toString()));
+    }
 }
