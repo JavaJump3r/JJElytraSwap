@@ -1,6 +1,5 @@
 package io.github.javajump3r;
 
-import com.google.gson.Gson;
 import me.lunaluna.fabric.elytrarecast.Startup;
 import me.lunaluna.fabric.elytrarecast.config.Config;
 import net.fabricmc.api.ClientModInitializer;
@@ -18,7 +17,6 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.*;
-import net.minecraft.item.equipment.ArmorMaterial;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -26,9 +24,7 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 
-import javax.xml.crypto.Data;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -212,7 +208,7 @@ public class ElytraSwapInit implements ClientModInitializer {
         return range;
     }
 
-    public static boolean prevTickIsOnGround=true;
+    public static boolean shouldWearChestplatePrevTick =true;
     public void onInitializeClient() {
         var bind = new KeyBinding("jjelytraswap.keybind",-1,"LavaJumper");
         ClientTickEvents.END_CLIENT_TICK.register(client->{
@@ -228,9 +224,11 @@ public class ElytraSwapInit implements ClientModInitializer {
             }
             if(!enabled)
                 return;
-            if(client.player.isOnGround()&&!prevTickIsOnGround)
+            boolean isInAir = !client.player.isOnGround() && !client.player.isInFluid();
+            boolean shouldWearChestplate = !isInAir;
+            if(shouldWearChestplate && !shouldWearChestplatePrevTick)
                 tryWearChestplate(client);
-            prevTickIsOnGround=client.player.isOnGround();
+            shouldWearChestplatePrevTick = shouldWearChestplate;
         });
         KeyBindingHelper.registerKeyBinding(bind);
     }
