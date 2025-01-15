@@ -38,3 +38,10 @@ hs_err_*.log
 replay_*.log
 *.hprof
 *.jfr
+
+# tokens
+
+local.properties
+
+.architectury-transformer\debug.log
+.architectury-transformer/debug.log

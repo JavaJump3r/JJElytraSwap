@@ -1,0 +1,19 @@
+modLoader = "javafml"
+loaderVersion = "*"
+license = "LGPLv3"
+issueTrackerURL="https://JavaJumper/JJElytraSwap/issues"
+
+[[mods]]
+modId = "jjelytraswap"
+version = "${version}"
+displayName = "${name}"
+authors = "JavaJumper"
+description = ""
+logoFile = "assets/jjelytraswap/icon.png"
+logoBlur = false
+
+[[mixins]]
+config = "jjelytraswap-common.mixins.json"
+
+[[mixins]]
+config = "jjelytraswap-neoforge.mixins.json"

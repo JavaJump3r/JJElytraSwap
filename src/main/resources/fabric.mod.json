@@ -1,37 +1,29 @@
 {
   "schemaVersion": 1,
-  "id": "jjelytraswap",
+  "id": "${id}",
   "version": "${version}",
-
-  "name": "Auto Elytra Swap",
-  "description": "Elytra swap mod (originally made for SeltShaker)",
+  "name": "${name}",
+  "description": "",
   "authors": [
     "JavaJumper"
   ],
   "contact": {
-    "homepage": "JavaJump3r.github.io",
-    "sources": "https://github.com/JavaJump3r/JJElytraSwap"
   },
-
-  "license": "CC0-1.0",
-  "icon": "assets/jjelytraswap/icon.png",
-
+  "license": "LGPLv3",
+  "icon": "assets/${id}/icon.png",
   "environment": "*",
   "entrypoints": {
     "client": [
-      "io.github.javajump3r.ElytraSwapInit"
-    ]
+      "io.github.jumperonjava.jjelytraswap.platforms.fabric.JJElytraSwapFabric"
+    ],
+    "modmenu": []
   },
   "mixins": [
-    "jjelytraswap.mixins.json"
+    "jjelytraswap-common.mixins.json",
+    "jjelytraswap-fabric.mixins.json"
   ],
-
   "depends": {
-    "fabricloader": ">=0.14.11",
-    "fabric-api": "*",
-    "java": ">=17"
-  },
-  "recommends": {
-    "minecraft" : ["1.20","1.20.1"]
+    "fabricloader": ">=0.15",
+    "minecraft": "${minecraft}"
   }
 }

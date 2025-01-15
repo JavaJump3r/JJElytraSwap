@@ -1,12 +1,8 @@
 {
   "required": true,
-  "minVersion": "0.8",
-  "package": "io.github.javajump3r.mixins",
+  "package": "io.github.jumperonjava.jjelytraswap.platforms.neoforge.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-  ],
-  "client": [
-    "SwapCheckMixin"
   ],
   "injectors": {
     "defaultRequire": 1

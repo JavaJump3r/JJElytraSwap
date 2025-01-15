@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "io.github.jumperonjava.jjelytraswap.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+  ],
+  "client": [
+    "SwapCheckMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
