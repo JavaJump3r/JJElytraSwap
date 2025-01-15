@@ -158,27 +158,17 @@ public class JJElytraSwapInit
 
 	private static int getChestplateStat(ItemStack chestplateItem) {
 		float score = 1;
-		logInChat("1");
 
-
-        var ARMOR = EntityAttributes.ARMOR;
-        var TOUGHNESS = EntityAttributes.ARMOR_TOUGHNESS;
 
 		if(chestplateItem.getItem() instanceof ArmorItem armorItem){
-			logInChat("2");
 			var component = armorItem.getComponents().get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
-			logInChat("3");
 			for (AttributeModifiersComponent.Entry entry : component.modifiers()) {
-				logInChat("4");
 				RegistryEntry<EntityAttribute> attribute = entry.attribute();
-				logInChat("5");
-				if(attribute.value() == ARMOR) {
+				if(attribute == EntityAttributes.ARMOR) {
 					score += entry.modifier().value();
-                    logInChat("armor: ",entry.modifier().value());
 				}
-				if(attribute.value() == TOUGHNESS) {
+				if(attribute == EntityAttributes.ARMOR_TOUGHNESS) {
 					score += entry.modifier().value();
-                    logInChat("toughness: ",entry.modifier().value());
 				}
 			}
 			score += getLevel(Enchantments.PROTECTION,chestplateItem)*2;
@@ -264,7 +254,7 @@ public class JJElytraSwapInit
 		});
 
 	}
-	private static void logInChat(Object... objects){
+	private static void debugLogInChat(Object... objects){
 		var chat = MinecraftClient.getInstance().inGameHud.getChatHud();
 		if(chat==null)
 			return;
